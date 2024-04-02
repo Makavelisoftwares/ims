@@ -1,0 +1,219 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  clerkId String  @id
+  email   String? @unique
+  profile String?
+  name    String
+  role    Role    @default(INTERN)
+
+  Org  Org[]
+  Dept Dept[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  industrial Intern[] @relation("industrialsupervisor")
+  Intern     Intern[] @relation("intern")
+
+  industrialspv Schoolspv[] @relation("industrialsupervisor")
+  schoolspv     Schoolspv[] @relation("schoolspv")
+
+  industrialonboardspv OnBoarding[] @relation("industrialonboard")
+}
+
+enum Role {
+  SUPERVISOR
+  INTERN
+}
+
+model Org {
+  id       String @id @default(cuid())
+  name     String
+  email    String
+  location String
+  phone    String
+
+  user   User   @relation(fields: [userId], references: [clerkId], onDelete: Cascade, onUpdate: Cascade)
+  userId String
+
+  Intern     Intern[]
+  Schoolspv  Schoolspv[]
+  OnBoarding OnBoarding[]
+
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  Announcements Announcements[]
+}
+
+model Dept {
+  id   String @id @default(cuid())
+  name String
+
+  user   User   @relation(fields: [userId], references: [clerkId], onDelete: Cascade, onUpdate: Cascade)
+  userId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  OnBoarding OnBoarding[]
+}
+
+model Intern {
+  id String @id @default(cuid())
+
+  cv          String?
+  firstname   String?
+  lastname    String?
+  email       String?
+  start       DateTime @db.Date
+  end         DateTime @db.Date
+  phone       String?
+  course      String?
+  institution String?
+  year        String?
+  feedback    String?
+
+  approved Boolean @default(false)
+
+  industrial   User   @relation("industrialsupervisor", fields: [industrialId], references: [clerkId], onDelete: Cascade, onUpdate: Cascade)
+  industrialId String
+
+  org    Org    @relation(fields: [orglId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  orglId String
+
+  User        User?   @relation("intern", fields: [userClerkId], references: [clerkId], onDelete: Cascade, onUpdate: Cascade)
+  userClerkId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  OnBoarding OnBoarding[]
+}
+
+model Schoolspv {
+  id String @id @default(cuid())
+
+  firstname   String?
+  lastname    String?
+  email       String?
+  start       DateTime @db.Date
+  end         DateTime @db.Date
+  phone       String?
+  department  String?
+  institution String?
+  year        String?
+
+  approved Boolean @default(false)
+
+  industrial   User   @relation("industrialsupervisor", fields: [industrialId], references: [clerkId], onDelete: Cascade, onUpdate: Cascade)
+  industrialId String
+
+  org    Org    @relation(fields: [orglId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  orglId String
+
+  User        User?   @relation("schoolspv", fields: [userClerkId], references: [clerkId], onDelete: Cascade, onUpdate: Cascade)
+  userClerkId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  OnBoarding OnBoarding[]
+}
+
+model OnBoarding {
+  id String @id @default(cuid())
+
+  name String?
+
+  intern   Intern @relation(fields: [internId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  internId String
+
+  schoolspv   Schoolspv @relation(fields: [schoolspvId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  schoolspvId String
+
+  industrial   User   @relation("industrialonboard", fields: [insustrialId], references: [clerkId], onDelete: Cascade, onUpdate: Cascade)
+  insustrialId String
+
+  org   Org    @relation(fields: [orgId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  orgId String
+
+  dept   Dept   @relation(fields: [deptId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  deptId String
+
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  Announcements Announcements[]
+  evaluation    evaluation[]
+  assignments   assignments[]
+}
+
+model assignments {
+  id String @id @default(cuid())
+
+  file String?
+
+  onboard   OnBoarding @relation(fields: [onboardId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  onboardId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Announcements {
+  id String @id @default(cuid())
+
+  subject String?
+
+  body String? @db.Text
+
+  file String?
+
+  deadline DateTime @db.Date
+
+  type type @default(ANNOUNCEMENT)
+
+  read Boolean @default(false)
+
+  org   Org    @relation(fields: [orgId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  orgId String
+
+  onboard      OnBoarding @relation(fields: [onboardingId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  onboardingId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum type {
+  ANNOUNCEMENT
+  ASSIGNMENT
+}
+
+model evaluation {
+  id String @id @default(cuid())
+
+  communication String?
+  skills        String?
+  quality       String?
+  punctuality   String?
+  problem       String?
+  attendance    String?
+  commments     String?
+
+  onboarding   OnBoarding @relation(fields: [onboardingId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  onboardingId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
